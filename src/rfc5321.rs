@@ -39,20 +39,14 @@ impl UTF8Policy for Legacy {
 
     fn qtext_smtp(input: &[u8]) -> NomResult<char> {
         map(
-            take1_filter(|c| match c {
-                32..=33 | 35..=91 | 93..=126 => true,
-                _ => false,
-            }),
+            take1_filter(|c| matches!(c, 32..=33 | 35..=91 | 93..=126)),
             char::from,
         )(input)
     }
 
     fn esmtp_value_char(input: &[u8]) -> NomResult<char> {
         map(
-            take1_filter(|c| match c {
-                33..=60 | 62..=126 => true,
-                _ => false,
-            }),
+            take1_filter(|c| matches!(c, 33..=60 | 62..=126)),
             char::from,
         )(input)
     }
@@ -399,10 +393,7 @@ fn _ipv6_literal(input: &[u8]) -> NomResult<AddressLiteral> {
 }
 
 fn dcontent(input: &[u8]) -> NomResult<u8> {
-    take1_filter(|c| match c {
-        33..=90 | 94..=126 => true,
-        _ => false,
-    })(input)
+    take1_filter(|c| matches!(c, 33..=90 | 94..=126))(input)
 }
 
 fn general_address_literal(input: &[u8]) -> NomResult<AddressLiteral> {

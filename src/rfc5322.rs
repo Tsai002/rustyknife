@@ -6,7 +6,6 @@
 //! [RFC 2047]: https://tools.ietf.org/html/rfc2047
 
 use std::borrow::Cow;
-use std::mem;
 use std::str;
 
 use nom::branch::alt;
@@ -37,10 +36,7 @@ impl UTF8Policy for Legacy {
 
     fn ctext(input: &[u8]) -> NomResult<char> {
         map(
-            take1_filter(|c| match c {
-                33..=39 | 42..=91 | 93..=126 => true,
-                _ => false,
-            }),
+            take1_filter(|c| matches!(c, 33..=39 | 42..=91 | 93..=126)),
             char::from,
         )(input)
     }
@@ -60,10 +56,7 @@ impl UTF8Policy for Legacy {
     fn qtext(input: &[u8]) -> NomResult<char> {
         alt((
             map(
-                take1_filter(|c| match c {
-                    33 | 35..=91 | 93..=126 => true,
-                    _ => false,
-                }),
+                take1_filter(|c| matches!(c, 33 | 35..=91 | 93..=126)),
                 char::from,
             ),
             _8bit_char,
@@ -72,10 +65,7 @@ impl UTF8Policy for Legacy {
 
     fn dtext(input: &[u8]) -> NomResult<char> {
         map(
-            take1_filter(|c| match c {
-                33..=90 | 94..=126 => true,
-                _ => false,
-            }),
+            take1_filter(|c| matches!(c, 33..=90 | 94..=126)),
             char::from,
         )(input)
     }
@@ -97,10 +87,7 @@ impl UTF8Policy for Intl {
     fn qtext(input: &[u8]) -> NomResult<char> {
         alt((
             map(
-                take1_filter(|c| match c {
-                    33 | 35..=91 | 93..=126 => true,
-                    _ => false,
-                }),
+                take1_filter(|c| matches!(c, 33 | 35..=91 | 93..=126)),
                 char::from,
             ),
             utf8_non_ascii,
@@ -166,9 +153,7 @@ fn _concat_comment<'a, I: IntoIterator<Item = CommentContent<'a>>>(
 
     let push_text = |bytes: &mut String, out: &mut Vec<CommentContent>| {
         if !bytes.is_empty() {
-            out.push(CommentContent::Text(
-                mem::replace(bytes, String::new()).into(),
-            ))
+            out.push(CommentContent::Text(std::mem::take(bytes).into()))
         }
     };
 
@@ -385,7 +370,7 @@ pub(crate) fn _padded_encoded_word<P: UTF8Policy>(input: &[u8]) -> NomResult<Str
 fn word<P: UTF8Policy>(input: &[u8]) -> NomResult<Text> {
     alt((
         map(_padded_encoded_word::<P>, Text::Literal),
-        map(atom::<P>, |x| Text::Atom(str::from_utf8(&x).unwrap())),
+        map(atom::<P>, |x| Text::Atom(str::from_utf8(x).unwrap())),
         map(quoted_string::<P>, |qs| Text::Literal(qs.0)),
     ))(input)
 }
@@ -400,11 +385,11 @@ where
     while let Some(cur) = iter.next() {
         match (cur, iter.peek()) {
             (Text::Atom(v), Some(_)) => {
-                out.push_str(&v);
+                out.push_str(v);
                 out.push(' ')
             }
             (_, Some(Text::Atom(v))) => {
-                out.push_str(&v);
+                out.push_str(v);
                 out.push(' ')
             }
             (ref t1, _) => out.push_str(t1.into()),

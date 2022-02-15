@@ -140,7 +140,7 @@ fn extended_initial_name(input: &[u8]) -> NomResult<Name> {
     map(
         terminated(pair(attribute, opt(initial_section)), tag("*")),
         |(name, section)| Name {
-            name: str::from_utf8(&name).unwrap(),
+            name: str::from_utf8(name).unwrap(),
             section,
         },
     )(input)
@@ -150,7 +150,7 @@ fn extended_other_names(input: &[u8]) -> NomResult<Name> {
     map(
         terminated(pair(attribute, other_sections), tag("*")),
         |(name, section)| Name {
-            name: str::from_utf8(&name).unwrap(),
+            name: str::from_utf8(name).unwrap(),
             section: Some(section),
         },
     )(input)
@@ -211,7 +211,7 @@ fn decode_segments(mut input: Vec<(u32, Segment)>, encoding: EncodingRef) -> Str
     let mut encoded = Vec::new();
 
     let decode = |bytes: &mut Vec<_>, out: &mut String| {
-        out.push_str(&encoding.decode(&bytes, DecoderTrap::Replace).unwrap());
+        out.push_str(&encoding.decode(bytes, DecoderTrap::Replace).unwrap());
         bytes.clear();
     };
 

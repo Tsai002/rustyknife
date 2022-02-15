@@ -28,10 +28,7 @@ fn hexchar(input: &[u8]) -> NomResult<u8> {
 }
 
 fn xchar(input: &[u8]) -> NomResult<u8> {
-    take1_filter(|c| match c {
-        33..=42 | 44..=60 | 62..=126 => true,
-        _ => false,
-    })(input)
+    take1_filter(|c| matches!(c, 33..=42 | 44..=60 | 62..=126))(input)
 }
 
 pub(crate) fn xtext(input: &[u8]) -> NomResult<Vec<u8>> {
@@ -40,10 +37,7 @@ pub(crate) fn xtext(input: &[u8]) -> NomResult<Vec<u8>> {
 
 fn _printable_xtext(input: &[u8]) -> NomResult<Vec<u8>> {
     verify(xtext, |xtext: &[u8]| {
-        xtext.iter().all(|c| match c {
-            9..=13 | 32..=126 => true,
-            _ => false,
-        })
+        xtext.iter().all(|c| matches!(c, 9..=13 | 32..=126))
     })(input)
 }
 

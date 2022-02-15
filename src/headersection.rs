@@ -70,10 +70,7 @@ fn crlf(input: &[u8]) -> NomResult<&[u8]> {
 pub type HeaderField<'a> = Result<(&'a [u8], &'a [u8]), &'a [u8]>;
 
 fn field_name(input: &[u8]) -> NomResult<&[u8]> {
-    take_while1(|c| match c {
-        33..=57 | 59..=126 => true,
-        _ => false,
-    })(input)
+    take_while1(|c| matches!(c, 33..=57 | 59..=126))(input)
 }
 
 fn until_crlf(input: &[u8]) -> NomResult<&[u8]> {

@@ -7,7 +7,7 @@ use encoding::{DecoderTrap, Encoding};
 use nom::bytes::complete::take;
 use nom::combinator::{map, recognize, verify};
 use nom::multi::{fold_many0, fold_many1};
-use nom::IResult;
+use nom::{IResult, InputLength};
 // Change this to something else that implements ParseError to get a
 // different error type out of nom.
 pub(crate) type NomError<'a> = ();
@@ -34,21 +34,23 @@ macro_rules! nom_fromstr {
             type Err = ();
 
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                exact!(s.as_bytes(), $func).map(|(_, r)| r).map_err(|_| ())
+                nom::combinator::all_consuming($func)(s.as_bytes())
+                    .map(|(_, r)| r)
+                    .map_err(|_| ())
             }
         }
         impl<'a> std::convert::TryFrom<&'a [u8]> for $type {
             type Error = nom::Err<NomError<'a>>;
 
             fn try_from(value: &'a [u8]) -> Result<Self, Self::Error> {
-                exact!(value, $func).map(|(_, v)| v)
+                nom::combinator::all_consuming($func)(value).map(|(_, v)| v)
             }
         }
         impl<'a> std::convert::TryFrom<&'a str> for $type {
             type Error = nom::Err<NomError<'a>>;
 
             fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-                exact!(value.as_bytes(), $func).map(|(_, v)| v)
+                nom::combinator::all_consuming($func)(value.as_bytes()).map(|(_, v)| v)
             }
         }
     };
@@ -58,7 +60,7 @@ macro_rules! nom_from_smtp {
     ( $smtp_func:path ) => {
         /// Parse using SMTP syntax.
         pub fn from_smtp(value: &[u8]) -> Result<Self, nom::Err<NomError>> {
-            exact!(value, $smtp_func).map(|(_, v)| v)
+            nom::combinator::all_consuming($smtp_func)(value).map(|(_, v)| v)
         }
     };
 }
@@ -66,7 +68,7 @@ macro_rules! nom_from_imf {
     ( $imf_func:path ) => {
         /// Parse using Internet Message Format syntax.
         pub fn from_imf(value: &[u8]) -> Result<Self, nom::Err<NomError>> {
-            exact!(value, $imf_func).map(|(_, v)| v)
+            nom::combinator::all_consuming($imf_func)(value).map(|(_, v)| v)
         }
     };
 }
@@ -108,39 +110,45 @@ pub(crate) fn fold_prefix0<I, O, E, F, G>(
     mut cont: G,
 ) -> impl FnMut(I) -> IResult<I, Vec<O>, E>
 where
-    I: Clone + PartialEq,
+    I: Clone + InputLength + PartialEq + Copy,
     F: FnMut(I) -> IResult<I, O, E>,
     G: FnMut(I) -> IResult<I, O, E>,
     E: nom::error::ParseError<I>,
     Vec<O>: Clone,
 {
     move |input: I| {
-        let (rem, v1) = prefix(input)?;
-        let out = vec![v1];
+        let (rem, _) = prefix(input)?;
 
-        fold_many0(&mut cont, out, |mut acc, value| {
-            acc.push(value);
-            acc
-        })(rem)
+        fold_many0(
+            &mut cont,
+            || match prefix(input) {
+                Ok((_, v)) => vec![v],
+                Err(_) => vec![],
+            },
+            |mut acc, value| {
+                acc.push(value);
+                acc
+            },
+        )(rem)
     }
 }
 
 pub(crate) fn recognize_many0<I, O, E, F>(f: F) -> impl FnMut(I) -> IResult<I, I, E>
 where
-    I: Clone + PartialEq + nom::Slice<std::ops::RangeTo<usize>> + nom::Offset,
+    I: Clone + InputLength + PartialEq + nom::Slice<std::ops::RangeTo<usize>> + nom::Offset,
     F: FnMut(I) -> IResult<I, O, E>,
     E: nom::error::ParseError<I>,
 {
-    recognize(fold_many0(f, (), |_, _| ()))
+    recognize(fold_many0(f, || (), |_, _| ()))
 }
 
 pub(crate) fn recognize_many1<I, O, E, F>(f: F) -> impl FnMut(I) -> IResult<I, I, E>
 where
-    I: Clone + PartialEq + nom::Slice<std::ops::RangeTo<usize>> + nom::Offset,
+    I: Clone + InputLength + PartialEq + nom::Slice<std::ops::RangeTo<usize>> + nom::Offset,
     F: FnMut(I) -> IResult<I, O, E>,
     E: nom::error::ParseError<I>,
 {
-    recognize(fold_many1(f, (), |_, _| ()))
+    recognize(fold_many1(f, || (), |_, _| ()))
 }
 
 pub(crate) fn take1_filter<F>(pred: F) -> impl Fn(&[u8]) -> NomResult<u8>

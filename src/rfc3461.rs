@@ -128,7 +128,7 @@ pub fn dsn_mail_params<'a>(
                 if value.len() > 100 {
                     return Err("ENVID over 100 bytes");
                 }
-                if let Ok((_, parsed)) = exact!(value, _printable_xtext) {
+                if let Ok((_, parsed)) = _printable_xtext(value) {
                     envid_val = Some(ascii_to_string(parsed).into());
                 } else {
                     return Err("Invalid ENVID");

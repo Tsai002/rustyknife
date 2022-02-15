@@ -177,15 +177,11 @@ fn comment<P: UTF8Policy>(input: &[u8]) -> NomResult<Vec<CommentContent>> {
         delimited(
             tag("("),
             pair(
-                fold_many0(
-                    pair(ofws, ccontent::<P>),
-                    Vec::new(),
-                    |mut acc, (fws, cc)| {
-                        acc.push(CommentContent::Text(fws));
-                        acc.push(cc);
-                        acc
-                    },
-                ),
+                fold_many0(pair(ofws, ccontent::<P>), Vec::new, |mut acc, (fws, cc)| {
+                    acc.push(CommentContent::Text(fws));
+                    acc.push(cc);
+                    acc
+                }),
                 ofws,
             ),
             tag(")"),

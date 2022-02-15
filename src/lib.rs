@@ -4,8 +4,7 @@
 #![allow(elided_lifetimes_in_paths)]
 #![warn(missing_docs)]
 
-#[macro_use]
-pub extern crate nom;
+pub use nom;
 
 /// Types used for varying parser behaviour.
 pub mod behaviour {

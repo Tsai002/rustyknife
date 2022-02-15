@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use nom::branch::alt;
 use nom::bytes::complete::{tag, tag_no_case, take_while1, take_while_m_n};
 use nom::character::{is_alphanumeric, is_digit, is_hex_digit};
-use nom::combinator::{map, map_res, opt, recognize, verify};
+use nom::combinator::{all_consuming, map, map_res, opt, recognize, verify};
 use nom::error::ParseError;
 use nom::multi::{many0, many1, many_m_n};
 use nom::sequence::{delimited, pair, preceded, separated_pair, terminated};
@@ -624,7 +624,7 @@ pub fn command<P: UTF8Policy>(input: &[u8]) -> NomResult<Command> {
 /// assert!(!validate_address::<Intl>(b""));
 /// ```
 pub fn validate_address<P: UTF8Policy>(i: &[u8]) -> bool {
-    exact!(i, mailbox::<P>).is_ok()
+    all_consuming(mailbox::<P>)(i).is_ok()
 }
 
 /// Parse a STARTTLS command from RFC 3207

@@ -534,7 +534,7 @@ pub fn rset_command(input: &[u8]) -> NomResult<()> {
     map(tag_no_case("RSET\r\n"), |_| ())(input)
 }
 
-fn _smtp_string<P: UTF8Policy>(input: &[u8]) -> NomResult<SMTPString> {
+pub fn _smtp_string<P: UTF8Policy>(input: &[u8]) -> NomResult<SMTPString> {
     alt((
         map(atom::<P>, |a| SMTPString(str::from_utf8(a).unwrap().into())),
         map(quoted_string::<P>, |qs| SMTPString(qs.into())),

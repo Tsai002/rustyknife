@@ -6,7 +6,7 @@ use crate::{
     NomResult,
 };
 
-/// Parse an SMTP AUTH command.
+/// Parse an SMTP AUTH PLAIN command.
 pub fn command<P: UTF8Policy>(input: &[u8]) -> NomResult<SMTPString> {
-    delimited(tag_no_case("AUTH"), _smtp_string::<P>, crlf)(input)
+    delimited(tag_no_case("AUTH PLAIN "), _smtp_string::<P>, crlf)(input)
 }
